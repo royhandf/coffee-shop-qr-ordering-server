@@ -11,3 +11,173 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+enum Role {
+  owner
+  staff
+}
+
+enum OrderStatus {
+  waiting_payment
+  queued
+  processing
+  ready
+  completed
+  cancelled
+}
+
+enum PaymentStatus {
+  unpaid
+  pending
+  paid
+  failed
+  expired
+}
+
+enum PaymentMethod {
+  cashier
+  qris
+}
+
+model users {
+  id         String   @id @default(uuid())
+  name       String   @db.VarChar(100)
+  email      String   @unique @db.VarChar(150)
+  password   String   @db.VarChar(255)
+  role       Role
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  store stores?
+}
+
+model stores {
+  id         String   @id @default(uuid())
+  owner_id   String   @unique
+  name       String   @db.VarChar(100)
+  is_open    Boolean  @default(false)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  owner      users        @relation(fields: [owner_id], references: [id])
+  tables     tables[]
+  categories categories[]
+}
+
+model tables {
+  id         String   @id @default(uuid())
+  store_id   String
+  code       String   @db.VarChar(50)
+  qr_token   String   @unique @db.VarChar(255)
+  is_active  Boolean  @default(true)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  store  stores   @relation(fields: [store_id], references: [id], onDelete: Cascade)
+  orders orders[]
+}
+
+model categories {
+  id         String   @id @default(uuid())
+  store_id   String
+  name       String   @db.VarChar(100)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  store stores  @relation(fields: [store_id], references: [id], onDelete: Cascade)
+  menus menus[]
+}
+
+model menus {
+  id           String   @id @default(uuid())
+  category_id  String
+  name         String   @db.VarChar(150)
+  description  String?  @db.Text
+  image_url    String?  @db.VarChar(500)
+  price        Decimal  @db.Decimal(10, 2)
+  is_available Boolean  @default(true)
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  category    categories    @relation(fields: [category_id], references: [id], onDelete: Cascade)
+  addons      addons[]
+  order_items order_items[]
+}
+
+model addons {
+  id           String   @id @default(uuid())
+  menu_id      String
+  name         String   @db.VarChar(100)
+  price        Decimal  @db.Decimal(10, 2)
+  is_available Boolean  @default(true)
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  menu              menus               @relation(fields: [menu_id], references: [id], onDelete: Cascade)
+  order_item_addons order_item_addons[]
+}
+
+model orders {
+  id              String        @id @default(uuid())
+  table_id        String
+  order_number    String        @unique @db.VarChar(50)
+  order_status    OrderStatus   @default(waiting_payment)
+  payment_status  PaymentStatus @default(unpaid)
+  subtotal        Decimal       @db.Decimal(10, 2)
+  tax_amount      Decimal       @default(0) @db.Decimal(10, 2)
+  service_amount  Decimal       @default(0) @db.Decimal(10, 2)
+  discount_amount Decimal       @default(0) @db.Decimal(10, 2)
+  grand_total     Decimal       @db.Decimal(10, 2)
+  customer_name   String?       @db.VarChar(100)
+  note            String?       @db.Text
+  created_at      DateTime      @default(now())
+  updated_at      DateTime      @updatedAt
+
+  table       tables        @relation(fields: [table_id], references: [id])
+  order_items order_items[]
+  payments    payments[]
+}
+
+model order_items {
+  id          String   @id @default(uuid())
+  order_id    String
+  menu_id     String
+  quantity    Int
+  base_price  Decimal  @db.Decimal(10, 2)
+  total_price Decimal  @db.Decimal(10, 2)
+  note        String?  @db.Text
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  order             orders              @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  menu              menus               @relation(fields: [menu_id], references: [id])
+  order_item_addons order_item_addons[]
+}
+
+model order_item_addons {
+  id            String  @id @default(uuid())
+  order_item_id String
+  addon_id      String
+  addon_name    String  @db.VarChar(100)
+  addon_price   Decimal @db.Decimal(10, 2)
+  quantity      Int     @default(1)
+
+  order_item order_items @relation(fields: [order_item_id], references: [id], onDelete: Cascade)
+  addon      addons      @relation(fields: [addon_id], references: [id])
+}
+
+model payments {
+  id          String        @id @default(uuid())
+  order_id    String
+  method      PaymentMethod
+  status      PaymentStatus @default(unpaid)
+  provider    String?       @db.VarChar(100)
+  external_id String?       @db.VarChar(255)
+  amount      Decimal       @db.Decimal(10, 2)
+  paid_at     DateTime?
+  expired_at  DateTime?
+  created_at  DateTime      @default(now())
+  updated_at  DateTime      @updatedAt
+
+  order orders @relation(fields: [order_id], references: [id], onDelete: Cascade)
+}
