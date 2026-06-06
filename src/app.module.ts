@@ -9,6 +9,7 @@ import { AddonsModule } from './addons/addons.module';
 import { TablesModule } from './tables/tables.module';
 import { OrdersModule } from './orders/orders.module';
 import { PublicModule } from './public/public.module';
+import { UploadsModule } from './uploads/uploads.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { PublicModule } from './public/public.module';
     TablesModule,
     OrdersModule,
     PublicModule,
+    UploadsModule,
   ],
 })
 export class AppModule {}
