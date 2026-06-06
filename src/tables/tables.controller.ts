@@ -33,7 +33,7 @@ export class TablesController {
     return this.tablesService.findAll(user.id);
   }
 
-  // GET /api/tables/:id/qr  →  ambil QR image base64 (FR-19, FR-20)
+  // GET /api/tables/:id/qr
   @Get(':id/qr')
   getQRCode(@CurrentUser() user: any, @Param('id') id: string) {
     return this.tablesService.getQRCode(user.id, id);

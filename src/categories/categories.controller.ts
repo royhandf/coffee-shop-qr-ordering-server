@@ -15,7 +15,6 @@ import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
-import { dot } from 'node:test/reporters';
 
 @Controller('categories')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -23,7 +22,7 @@ import { dot } from 'node:test/reporters';
 export class CategoriesController {
   constructor(private readonly categoriesService: CategoriesService) {}
 
-  // POST /pai/categories
+  // POST /api/categories
   @Post()
   create(@CurrentUser() user: any, @Body() dto: CreateCategoryDto) {
     return this.categoriesService.create(user.id, dto);
