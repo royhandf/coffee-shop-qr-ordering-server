@@ -5,10 +5,14 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateOrderDto } from './dto/create-order.dto';
+import { GatewayService } from 'src/gateway/gateway.service';
 
 @Injectable()
 export class PublicService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private gatewayService: GatewayService,
+  ) {}
 
   async getMenuByToken(token: string) {
     // Cari meja berdasarkan QR token
@@ -181,7 +185,9 @@ export class PublicService {
     });
 
     // Kembalikan order lengkap
-    return this.getOrderById(order.id);
+    const fullOrder = await this.getOrderById(order.id);
+    this.gatewayService.emitNewOrder(fullOrder);
+    return fullOrder;
   }
 
   // Customer track status order

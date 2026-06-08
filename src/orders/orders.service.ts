@@ -5,10 +5,14 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
+import { GatewayService } from 'src/gateway/gateway.service';
 
 @Injectable()
 export class OrdersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private gatewayService: GatewayService,
+  ) {}
 
   //   Helper: cari store milik user ini
   private async getStore(ownerId: string) {
@@ -89,10 +93,14 @@ export class OrdersService {
         `Tidak bisa mengubah status dari "${current}" ke "${next}"`,
       );
     }
-    return this.prisma.orders.update({
+
+    const updated = await this.prisma.orders.update({
       where: { id: orderId },
       data: { order_status: next as any },
     });
+
+    this.gatewayService.emitOrderStatusUpdated(orderId, next, updated);
+    return updated;
   }
 
   async cancelOrder(ownerId: string, orderId: string) {
